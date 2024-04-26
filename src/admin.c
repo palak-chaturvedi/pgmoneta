@@ -32,6 +32,8 @@
 #include <security.h>
 #include <aes.h>
 #include <utils.h>
+#include <fcntl.h>
+#include <stdio.h>
 
 /* system */
 #include <ctype.h>
@@ -394,7 +396,13 @@ master_key(char* password, bool generate_pwd, int pwd_length)
       }
    }
 
-   file = fopen(&buf[0], "w+");
+   int fd = open(&buf[0], O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd==-1){
+      warn("Could not append to users file '%s'", &buf[0]);
+      goto error;
+   }
+
+   file = fdopen(fd, "w+");
    if (file == NULL)
    {
       warn("Could not write to master key file '%s'", &buf[0]);
@@ -526,10 +534,15 @@ add_user(char* users_path, char* username, char* password, bool generate_pwd, in
       do_free = false;
    }
 
-   users_file = fopen(users_path, "a+");
+   int fd = open(users_path, O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd==-1){
+      warn("Could not append to users file '%s'", users_path);
+      goto error;
+   }
+   users_file = fdopen(fd, "a+");
    if (users_file == NULL)
    {
-      warn("Could not append to users file '%s'", users_path);
+      warn("Could not kl append to users file '%s'", users_path);
       goto error;
    }
 
@@ -701,8 +714,12 @@ update_user(char* users_path, char* username, char* password, bool generate_pwd,
       do_verify = false;
       do_free = false;
    }
-
-   users_file = fopen(users_path, "r");
+   int fd = open(users_path, O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd==-1){
+      warn("Could not append to users file '%s'", users_path);
+      goto error;
+   }
+   users_file = fdopen(fd, "r");
    if (!users_file)
    {
       warnx("%s not found\n", users_path);
@@ -710,7 +727,12 @@ update_user(char* users_path, char* username, char* password, bool generate_pwd,
    }
 
    snprintf(tmpfilename, sizeof(tmpfilename), "%s.tmp", users_path);
-   users_file_tmp = fopen(tmpfilename, "w+");
+   int fd2 = open(tmpfilename, O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd2==-1){
+      warn("Could not append to users file '%s'", users_path);
+      goto error;
+   }
+   users_file_tmp = fdopen(fd2, "w+");
    if (users_file_tmp == NULL)
    {
       warn("Could not write to temporary user file '%s'", tmpfilename);
@@ -882,7 +904,13 @@ remove_user(char* users_path, char* username)
    char un[MAX_USERNAME_LENGTH];
    bool found = false;
 
-   users_file = fopen(users_path, "r");
+   int fd = open(users_path, O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd==-1){
+      warn("Could not append to users file '%s'", users_path);
+      goto error;
+   }
+
+   users_file = fdopen(fd, "r");
    if (!users_file)
    {
       warnx("%s not found", users_path);
@@ -891,7 +919,12 @@ remove_user(char* users_path, char* username)
 
    memset(&tmpfilename, 0, sizeof(tmpfilename));
    snprintf(tmpfilename, sizeof(tmpfilename), "%s.tmp", users_path);
-   users_file_tmp = fopen(tmpfilename, "w+");
+   int fd2 = open(tmpfilename, O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd2==-1){
+      warn("Could not append temporary to users file '%s'", tmpfilename);
+      goto error;
+   }
+   users_file_tmp = fdopen(fd2, "w+");
    if (users_file_tmp == NULL)
    {
       warn("Could not write to temporary user file '%s'", tmpfilename);
@@ -974,8 +1007,13 @@ list_users(char* users_path)
    FILE* users_file = NULL;
    char line[MISC_LENGTH];
    char* ptr = NULL;
+   int fd = open(users_path, O_RDWR	| O_APPEND | O_CREAT | O_DIRECT);
+   if(fd==-1){
+      warn("Could not append to users file '%s'", users_path);
+      goto error;
+   }
 
-   users_file = fopen(users_path, "r");
+   users_file = fdopen(fd, "r");
    if (!users_file)
    {
       goto error;
